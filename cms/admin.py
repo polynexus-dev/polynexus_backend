@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Service, Project, Testimonial, FAQ, BlogPost, ContactSetting
+from .models import Service, Project, Testimonial, FAQ, BlogPost, ContactSetting, Enquiry
 
 @admin.register(Service)
 class ServiceAdmin(admin.ModelAdmin):
@@ -47,3 +47,10 @@ class ContactSettingAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         # Prevent deleting the configuration
         return False
+
+
+@admin.register(Enquiry)
+class EnquiryAdmin(admin.ModelAdmin):
+    list_display = ('name', 'email', 'company', 'replied', 'created_at')
+    list_filter = ('replied', 'created_at')
+    search_fields = ('name', 'email', 'company', 'message')

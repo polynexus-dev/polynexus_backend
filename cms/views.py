@@ -4,7 +4,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate
 from django.db.models import Q
-from .models import Service, Project, Testimonial, FAQ, BlogPost, ContactSetting, HeroSetting
+from .models import Service, Project, Testimonial, FAQ, BlogPost, ContactSetting, HeroSetting, Enquiry
 from .auth import generate_token, staff_member_required
 
 # --- Public Client Views (Read-Only) ---
@@ -54,7 +54,14 @@ def get_projects(request):
             'benefits': p.benefits or [],
             'results': p.results or [],
             'price': p.price or '',
-            'price_detail_html': p.price_detail_html or ''
+            'price_detail_html': p.price_detail_html or '',
+            'standard_price': p.standard_price or '',
+            'standard_original_price': p.standard_original_price or '',
+            'premium_price': p.premium_price or '',
+            'premium_original_price': p.premium_original_price or '',
+            'standard_features': p.standard_features or [],
+            'premium_features': p.premium_features or [],
+            'enterprise_features': p.enterprise_features or []
         })
     return JsonResponse(data, safe=False)
 
@@ -90,7 +97,14 @@ def get_project(request, id):
         'benefits': p.benefits or [],
         'results': p.results or [],
         'price': p.price or '',
-        'price_detail_html': p.price_detail_html or ''
+        'price_detail_html': p.price_detail_html or '',
+        'standard_price': p.standard_price or '',
+        'standard_original_price': p.standard_original_price or '',
+        'premium_price': p.premium_price or '',
+        'premium_original_price': p.premium_original_price or '',
+        'standard_features': p.standard_features or [],
+        'premium_features': p.premium_features or [],
+        'enterprise_features': p.enterprise_features or []
     }
     return JsonResponse(data)
 
@@ -260,7 +274,14 @@ def create_project(request):
             benefits=data.get('benefits', []),
             results=data.get('results', []),
             price=data.get('price', ''),
-            price_detail_html=data.get('price_detail_html', '')
+            price_detail_html=data.get('price_detail_html', ''),
+            standard_price=data.get('standard_price', ''),
+            standard_original_price=data.get('standard_original_price', ''),
+            premium_price=data.get('premium_price', ''),
+            premium_original_price=data.get('premium_original_price', ''),
+            standard_features=data.get('standard_features', []),
+            premium_features=data.get('premium_features', []),
+            enterprise_features=data.get('enterprise_features', [])
         )
         return JsonResponse({'success': True, 'id': project.id}, status=201)
     except Exception as e:
@@ -307,6 +328,13 @@ def update_delete_project(request, id):
             project.results = data.get('results', project.results)
             project.price = data.get('price', project.price)
             project.price_detail_html = data.get('price_detail_html', project.price_detail_html)
+            project.standard_price = data.get('standard_price', project.standard_price)
+            project.standard_original_price = data.get('standard_original_price', project.standard_original_price)
+            project.premium_price = data.get('premium_price', project.premium_price)
+            project.premium_original_price = data.get('premium_original_price', project.premium_original_price)
+            project.standard_features = data.get('standard_features', project.standard_features)
+            project.premium_features = data.get('premium_features', project.premium_features)
+            project.enterprise_features = data.get('enterprise_features', project.enterprise_features)
             project.save()
             return JsonResponse({'success': True})
         except Exception as e:
@@ -530,6 +558,103 @@ def update_hero_info(request):
         h.cta2_link = data.get('cta2_link', h.cta2_link)
         h.trust_indicators = data.get('trust_indicators', h.trust_indicators)
         h.save()
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+@csrf_exempt
+def create_enquiry(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    try:
+        data = json.loads(request.body)
+        name = data.get('name', '').strip()
+        email = data.get('email', '').strip()
+        company = data.get('company', '').strip()
+        message = data.get('message', '').strip()
+
+        if not name or not email or not message:
+            return JsonResponse({'error': 'Name, email, and message are required'}, status=400)
+
+        enquiry = Enquiry.objects.create(
+            name=name,
+            email=email,
+            company=company,
+            message=message
+        )
+        return JsonResponse({'success': True, 'id': enquiry.id}, status=201)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+@csrf_exempt
+@staff_member_required
+def get_enquiries(request):
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    try:
+        enquiries = Enquiry.objects.all().order_by('-created_at')
+        data = []
+        for eq in enquiries:
+            data.append({
+                'id': eq.id,
+                'name': eq.name,
+                'email': eq.email,
+                'company': eq.company or '',
+                'message': eq.message,
+                'created_at': eq.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                'replied': eq.replied,
+                'reply_message': eq.reply_message or '',
+                'replied_at': eq.replied_at.strftime('%Y-%m-%d %H:%M:%S') if eq.replied_at else None
+            })
+        return JsonResponse(data, safe=False)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+@csrf_exempt
+@staff_member_required
+def delete_enquiry(request, id):
+    if request.method != 'DELETE':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    try:
+        try:
+            enquiry = Enquiry.objects.get(id=id)
+        except Enquiry.DoesNotExist:
+            return JsonResponse({'error': 'Enquiry not found'}, status=404)
+        enquiry.delete()
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+
+@csrf_exempt
+@staff_member_required
+def reply_enquiry(request, id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    try:
+        try:
+            enquiry = Enquiry.objects.get(id=id)
+        except Enquiry.DoesNotExist:
+            return JsonResponse({'error': 'Enquiry not found'}, status=404)
+        
+        data = json.loads(request.body)
+        reply_message = data.get('reply_message', '').strip()
+        if not reply_message:
+            return JsonResponse({'error': 'Reply message is required'}, status=400)
+        
+        import django.utils.timezone as timezone
+        enquiry.reply_message = reply_message
+        enquiry.replied = True
+        enquiry.replied_at = timezone.now()
+        enquiry.save()
+
+        # Simulate email dispatch
+        print(f"[EMAIL SIMULATION] Sending reply to {enquiry.name} <{enquiry.email}>")
+        print(f"Message: {reply_message}")
+
         return JsonResponse({'success': True})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)

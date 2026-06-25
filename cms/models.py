@@ -20,12 +20,11 @@ class Service(models.Model):
 
 class Project(models.Model):
     CATEGORY_CHOICES = [
-        ('enterprise', 'Enterprise Management'),
-        ('logistics', 'Custom Operations & Logistics'),
-        ('saas', 'Productivity & B2B SaaS'),
+        ('polynexus', 'Polynexus Products'),
+        ('custom', 'Custom Software'),
     ]
     title = models.CharField(max_length=100)
-    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, help_text="Project category (enterprise, logistics, or saas)")
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, help_text="Project category (polynexus or custom)")
     desc = models.TextField(help_text="Detailed description of the business/technical solution")
     metric = models.CharField(max_length=50, help_text="High-impact metric value (e.g. 0.15ms, 100%)")
     metricLabel = models.CharField(max_length=100, help_text="Label explaining the metric value (e.g. Vector Resolution)")
@@ -40,6 +39,13 @@ class Project(models.Model):
     results = ArrayField(models.CharField(max_length=255), blank=True, null=True, help_text="List of measurable results/outcomes achieved")
     price = models.CharField(max_length=100, blank=True, null=True, help_text="Starting price of the project (e.g. ₹599 / month)")
     price_detail_html = models.TextField(blank=True, null=True, help_text="Raw HTML table/content for detailed pricing modal")
+    standard_price = models.CharField(max_length=50, blank=True, null=True, default='', help_text="Standard discounted price (e.g. 1249)")
+    standard_original_price = models.CharField(max_length=50, blank=True, null=True, default='', help_text="Standard original price (e.g. 1499)")
+    premium_price = models.CharField(max_length=50, blank=True, null=True, default='', help_text="Premium discounted price (e.g. 2999)")
+    premium_original_price = models.CharField(max_length=50, blank=True, null=True, default='', help_text="Premium original price (e.g. 3499)")
+    standard_features = ArrayField(models.CharField(max_length=255), blank=True, null=True, default=list, help_text="Standard plan features list")
+    premium_features = ArrayField(models.CharField(max_length=255), blank=True, null=True, default=list, help_text="Premium plan features list")
+    enterprise_features = ArrayField(models.CharField(max_length=255), blank=True, null=True, default=list, help_text="Enterprise plan features list")
 
     class Meta:
         db_table = 'projects'
@@ -160,3 +166,21 @@ class AdminToken(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.token[:8]}..."
+
+
+class Enquiry(models.Model):
+    name = models.CharField(max_length=255)
+    email = models.EmailField()
+    company = models.CharField(max_length=255, blank=True, null=True, default='')
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    replied = models.BooleanField(default=False)
+    reply_message = models.TextField(blank=True, null=True, default='')
+    replied_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'enquiries'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Enquiry from {self.name} ({self.email})"

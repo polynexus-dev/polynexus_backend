@@ -52,4 +52,10 @@ urlpatterns = [
     path('api/blog/posts/<int:id>', cms_views.update_delete_blog_post, name='api_update_delete_blog_post'),
     
     path('api/settings/contact/update', cms_views.update_contact_info, name='api_update_contact_info'),
+
+    # Enquiry APIs
+    path('api/enquiries/create', cms_views.create_enquiry, name='api_create_enquiry'),
+    path('api/enquiries', cms_views.get_enquiries, name='api_get_enquiries'),
+    path('api/enquiries/<int:id>', cms_views.delete_enquiry, name='api_delete_enquiry'),
+    path('api/enquiries/<int:id>/reply', cms_views.reply_enquiry, name='api_reply_enquiry'),
 ]

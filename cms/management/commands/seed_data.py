@@ -101,7 +101,7 @@ class Command(BaseCommand):
         projects_data = [
             {
                 'title': 'Mail Service Software',
-                'category': 'saas',
+                'category': 'polynexus',
                 'desc': 'High-throughput enterprise mail server software supporting transactional relays and spam-filtering layers.',
                 'metric': '99.999%',
                 'metricLabel': 'Uptime Delivery',
@@ -121,7 +121,7 @@ class Command(BaseCommand):
             },
             {
                 'title': 'Pench Milk Delivery System',
-                'category': 'logistics',
+                'category': 'custom',
                 'desc': 'Custom route optimization and subscription management system for dairy distribution operations.',
                 'metric': '10k+ Liters/Day',
                 'metricLabel': 'Milk Distributed',
@@ -141,7 +141,7 @@ class Command(BaseCommand):
             },
             {
                 'title': 'Enterprise ERP Software',
-                'category': 'enterprise',
+                'category': 'polynexus',
                 'desc': 'Modular management tool synchronizing production schedules, ledger accounting, and raw material inventory.',
                 'metric': '35%',
                 'metricLabel': 'Operational Savings',
@@ -161,7 +161,7 @@ class Command(BaseCommand):
             },
             {
                 'title': 'Enterprise CRM Software',
-                'category': 'enterprise',
+                'category': 'polynexus',
                 'desc': 'Customer relationship platform tracking sales pipelines, support interactions, and agent response latency.',
                 'metric': '18x',
                 'metricLabel': 'Sales Conversion',
@@ -181,7 +181,7 @@ class Command(BaseCommand):
             },
             {
                 'title': 'Moto Bee Garage System',
-                'category': 'logistics',
+                'category': 'custom',
                 'desc': 'Custom software for garage owners featuring a real-time parts inventory dashboard and mobile app for mechanics.',
                 'metric': '< 5s',
                 'metricLabel': 'Dispatch Latency',
@@ -201,7 +201,7 @@ class Command(BaseCommand):
             },
             {
                 'title': 'Campus Flow',
-                'category': 'enterprise',
+                'category': 'polynexus',
                 'desc': 'College & School management system managing member directory, student/teacher attendance, lecture schedules, and grading.',
                 'metric': '99.8%',
                 'metricLabel': 'Attendance Accuracy',
@@ -292,6 +292,48 @@ class Command(BaseCommand):
             elif "Garage" in p['title']:
                 project_price = "Starting from ₹299 / employee / month"
 
+            # If the category is polynexus, add the new pricing fields
+            std_price = ''
+            std_orig = ''
+            prem_price = ''
+            prem_orig = ''
+            std_feats = []
+            prem_feats = []
+            ent_feats = []
+
+            if p['category'] == 'polynexus':
+                std_price = '1249'
+                std_orig = '1499'
+                prem_price = '2999'
+                prem_orig = '3499'
+                std_feats = [
+                    'Create quotes and GST compliant invoices',
+                    'Customize for local languages and tax laws',
+                    'Multi-user access for up to 3 users',
+                    'Handle multi-currency transactions',
+                    'Set up automated payment reminders',
+                    'Manage projects & timesheets',
+                    'Enable self-service customer portal',
+                    'Customize your transaction templates'
+                ]
+                prem_feats = [
+                    'Includes everything in Standard +',
+                    'Manage subscription billing',
+                    'Multi-user access for up to 10 users',
+                    'Use hosted payment pages',
+                    'Automate billing for usage-based pricing models',
+                    'Manage in-app purchases'
+                ]
+                ent_feats = [
+                    'Helps enterprises handle',
+                    'High volume customers and transactions',
+                    'Advanced usage-based billing controls',
+                    'Flexible revenue recognition configurations',
+                    'Analytics with forecasting and AI insights',
+                    'In-depth customization for reports and modules',
+                    'Priority support and dedicated account manager'
+                ]
+
             Project.objects.update_or_create(
                 title=p['title'],
                 defaults={
@@ -307,7 +349,14 @@ class Command(BaseCommand):
                     'benefits': p.get('benefits', []),
                     'results': p.get('results', []),
                     'price': project_price,
-                    'price_detail_html': sample_table_html
+                    'price_detail_html': sample_table_html,
+                    'standard_price': std_price,
+                    'standard_original_price': std_orig,
+                    'premium_price': prem_price,
+                    'premium_original_price': prem_orig,
+                    'standard_features': std_feats,
+                    'premium_features': prem_feats,
+                    'enterprise_features': ent_feats
                 }
             )
         self.stdout.write(self.style.SUCCESS(f'Successfully seeded {len(projects_data)} projects.'))
