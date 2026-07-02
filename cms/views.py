@@ -4,7 +4,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import authenticate
 from django.db.models import Q
-from .models import Service, Project, Testimonial, FAQ, BlogPost, ContactSetting, HeroSetting, Enquiry
+from .models import Service, Project, Testimonial, FAQ, BlogPost, ContactSetting, HeroSetting, AboutSetting, Enquiry
 from .auth import generate_token, staff_member_required
 
 # --- Public Client Views (Read-Only) ---
@@ -180,7 +180,17 @@ def admin_login(request):
         user = authenticate(username=username, password=password)
         if user is not None and user.is_staff:
             token = generate_token(user)
-            return JsonResponse({'token': token, 'username': user.username})
+            response = JsonResponse({'token': token, 'username': user.username})
+            # Set secure HTTP-only cookie for the admin session
+            response.set_cookie(
+                'admin_token',
+                token,
+                max_age=86400,  # 24 hours
+                httponly=True,
+                samesite='Lax',
+                secure=request.is_secure()
+            )
+            return response
         return JsonResponse({'error': 'Invalid credentials or not a staff member'}, status=400)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
@@ -252,6 +262,8 @@ def create_project(request):
             import base64
             try:
                 header, base64_str = image_val.split(';base64,')
+                if len(base64_str) * 3 / 4 > 1024 * 1024:
+                    return JsonResponse({'error': 'Image size exceeds maximum limit of 1MB'}, status=400)
                 mime_type = header.replace('data:', '')
                 img_data = base64.b64decode(base64_str)
                 image_val = ""
@@ -304,6 +316,8 @@ def update_delete_project(request, id):
                 import base64
                 try:
                     header, base64_str = image_val.split(';base64,')
+                    if len(base64_str) * 3 / 4 > 1024 * 1024:
+                        return JsonResponse({'error': 'Image size exceeds maximum limit of 1MB'}, status=400)
                     mime_type = header.replace('data:', '')
                     project.image_data = base64.b64decode(base64_str)
                     project.image_mime_type = mime_type
@@ -568,6 +582,17 @@ def create_enquiry(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
     try:
+        from django.core.cache import cache
+        ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', ''))
+        if ip:
+            ip = ip.split(',')[0].strip()
+        
+        cache_key = f"enquiry_limit_{ip}"
+        submit_count = cache.get(cache_key, 0)
+        
+        if submit_count >= 5:
+            return JsonResponse({'error': 'Too many submissions. Please wait an hour before trying again.'}, status=429)
+            
         data = json.loads(request.body)
         name = data.get('name', '').strip()
         email = data.get('email', '').strip()
@@ -583,6 +608,8 @@ def create_enquiry(request):
             company=company,
             message=message
         )
+        
+        cache.set(cache_key, submit_count + 1, 3600)
         return JsonResponse({'success': True, 'id': enquiry.id}, status=201)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
@@ -658,3 +685,37 @@ def reply_enquiry(request, id):
         return JsonResponse({'success': True})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
+
+
+# About Settings API Views
+def get_about_info(request):
+    a = AboutSetting.load()
+    data = {
+        'title_prefix': a.title_prefix,
+        'title_highlight': a.title_highlight,
+        'subtitle': a.subtitle,
+        'stats': a.stats,
+        'values': a.values,
+        'team': a.team
+    }
+    return JsonResponse(data)
+
+@csrf_exempt
+@staff_member_required
+def update_about_info(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    try:
+        data = json.loads(request.body)
+        a = AboutSetting.load()
+        a.title_prefix = data.get('title_prefix', a.title_prefix)
+        a.title_highlight = data.get('title_highlight', a.title_highlight)
+        a.subtitle = data.get('subtitle', a.subtitle)
+        a.stats = data.get('stats', a.stats)
+        a.values = data.get('values', a.values)
+        a.team = data.get('team', a.team)
+        a.save()
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+

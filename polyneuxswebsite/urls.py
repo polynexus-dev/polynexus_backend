@@ -30,12 +30,14 @@ urlpatterns = [
     path('api/blog/posts', cms_views.get_blog_posts, name='api_blog_posts'),
     path('api/settings/contact', cms_views.get_contact_info, name='api_contact_settings'),
     path('api/settings/hero', cms_views.get_hero_info, name='api_hero_settings'),
+    path('api/settings/about', cms_views.get_about_info, name='api_about_settings'),
 
     # Admin Auth API
     path('api/admin/login', cms_views.admin_login, name='api_admin_login'),
 
     # Admin CRUD APIs
     path('api/settings/hero/update', cms_views.update_hero_info, name='api_update_hero_info'),
+    path('api/settings/about/update', cms_views.update_about_info, name='api_update_about_info'),
     path('api/services/create', cms_views.create_service, name='api_create_service'),
     path('api/services/<str:id>', cms_views.update_delete_service, name='api_update_delete_service'),
     

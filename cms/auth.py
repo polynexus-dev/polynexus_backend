@@ -12,13 +12,26 @@ def generate_token(user):
 def staff_member_required(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
+        token_str = None
         auth_header = request.headers.get('Authorization', '')
-        if not auth_header.startswith('Bearer '):
-            return JsonResponse({'error': 'Unauthorized: Bearer token required'}, status=401)
+        if auth_header.startswith('Bearer '):
+            token_str = auth_header.split('Bearer ')[1].strip()
+        else:
+            token_str = request.COOKIES.get('admin_token')
+
+        if not token_str:
+            return JsonResponse({'error': 'Unauthorized: Authentication required'}, status=401)
         
-        token_str = auth_header.split('Bearer ')[1].strip()
         try:
             admin_token = AdminToken.objects.select_related('user').get(token=token_str)
+            
+            # Check expiration (24 hours)
+            from django.utils import timezone
+            import datetime
+            if timezone.now() - admin_token.created_at > datetime.timedelta(hours=24):
+                admin_token.delete()
+                return JsonResponse({'error': 'Unauthorized: Session expired'}, status=401)
+            
             if not admin_token.user.is_staff:
                 return JsonResponse({'error': 'Forbidden: Staff status required'}, status=403)
             

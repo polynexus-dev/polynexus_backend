@@ -156,6 +156,93 @@ class HeroSetting(models.Model):
         return "Global Hero Settings"
 
 
+class AboutSetting(models.Model):
+    title_prefix = models.CharField(max_length=255, default='Building the infrastructure')
+    title_highlight = models.CharField(max_length=255, default="tomorrow's businesses")
+    subtitle = models.TextField(default="Polynexus is an enterprise software engineering firm. We design, build, and operate the high-performance platforms, cloud backends, and custom applications that modern organizations need to operate at scale — with zero compromise on security or reliability.")
+    stats = models.JSONField(default=list, help_text="List of dicts containing label, value, icon")
+    values = models.JSONField(default=list, help_text="List of dicts containing title, desc, icon, color, bg")
+    team = models.JSONField(default=list, help_text="List of dicts containing name, role, desc, initials, color")
+
+    class Meta:
+        db_table = 'about_settings'
+        verbose_name = 'About Settings'
+        verbose_name_plural = 'About Settings'
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def load(cls):
+        obj, created = cls.objects.get_or_create(pk=1)
+        if created or not obj.stats:
+            obj.stats = [
+                {"value": "4+", "label": "Enterprise Products", "icon": "Award"},
+                {"value": "99.99%", "label": "Uptime SLA", "icon": "Zap"},
+                {"value": "100%", "label": "Expert-Led Team", "icon": "Users"},
+                {"value": "<15m", "label": "Support Response", "icon": "Globe"}
+            ]
+            obj.values = [
+                {
+                    "icon": "Target",
+                    "color": "text-secondary",
+                    "bg": "bg-secondary/10",
+                    "title": "Precision Engineering",
+                    "desc": "We build every system with exactness — from database schemas to UI micro-animations. No shortcuts, no generic templates."
+                },
+                {
+                    "icon": "ShieldCheck",
+                    "color": "text-blue-500",
+                    "bg": "bg-blue-50",
+                    "title": "Security First",
+                    "desc": "Zero-trust architecture, AES-256 encryption, and SOC2 compliance principles are the baseline — not the afterthought."
+                },
+                {
+                    "icon": "Lightbulb",
+                    "color": "text-amber-500",
+                    "bg": "bg-amber-50",
+                    "title": "Innovation Always",
+                    "desc": "We push beyond off-the-shelf. Every client engagement is an opportunity to engineer something the industry hasn't seen."
+                },
+                {
+                    "icon": "Heart",
+                    "color": "text-rose-500",
+                    "bg": "bg-rose-50",
+                    "title": "Partner Mindset",
+                    "desc": "We don't just build and hand over. We become an extension of your team — aligned to your long-term business outcomes."
+                }
+            ]
+            obj.team = [
+                {
+                    "name": "Polynexus Engineering",
+                    "role": "Core Platform Architecture",
+                    "desc": "Full-stack engineers specializing in distributed systems, zero-trust security frameworks, and high-throughput API design.",
+                    "initials": "PE",
+                    "color": "bg-secondary/15 text-secondary"
+                },
+                {
+                    "name": "Design & UX Lab",
+                    "role": "Interface & Experience Design",
+                    "desc": "UI/UX specialists who craft component-first design systems and micro-animated user experiences for enterprise surfaces.",
+                    "initials": "DX",
+                    "color": "bg-blue-50 text-blue-600"
+                },
+                {
+                    "name": "Infrastructure Ops",
+                    "role": "Cloud & Database Operations",
+                    "desc": "DevOps and database architects managing active-active replication, geo-distributed caching, and compliance monitoring.",
+                    "initials": "IO",
+                    "color": "bg-amber-50 text-amber-600"
+                }
+            ]
+            obj.save()
+        return obj
+
+    def __str__(self):
+        return "Global About Settings"
+
+
 class AdminToken(models.Model):
     user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
     token = models.CharField(max_length=64, primary_key=True)

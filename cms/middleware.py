@@ -10,7 +10,13 @@ class CORSMiddleware:
         else:
             response = self.get_response(request)
             
-        response["Access-Control-Allow-Origin"] = "*"
-        response["Access-Control-Allow-Headers"] = "*"
+        origin = request.headers.get("Origin")
+        if origin:
+            response["Access-Control-Allow-Origin"] = origin
+            response["Access-Control-Allow-Credentials"] = "true"
+        else:
+            response["Access-Control-Allow-Origin"] = "*"
+            
+        response["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With, Accept"
         response["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
         return response

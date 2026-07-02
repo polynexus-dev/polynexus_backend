@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Service, Project, Testimonial, FAQ, BlogPost, ContactSetting, Enquiry
+from .models import Service, Project, Testimonial, FAQ, BlogPost, ContactSetting, HeroSetting, AboutSetting, Enquiry
 
 @admin.register(Service)
 class ServiceAdmin(admin.ModelAdmin):
@@ -46,6 +46,32 @@ class ContactSettingAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         # Prevent deleting the configuration
+        return False
+
+
+@admin.register(HeroSetting)
+class HeroSettingAdmin(admin.ModelAdmin):
+    list_display = ('__str__', 'badge', 'title_prefix', 'title_highlight')
+    
+    def has_add_permission(self, request):
+        if self.model.objects.exists():
+            return False
+        return super().has_add_permission(request)
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(AboutSetting)
+class AboutSettingAdmin(admin.ModelAdmin):
+    list_display = ('__str__', 'title_prefix', 'title_highlight')
+    
+    def has_add_permission(self, request):
+        if self.model.objects.exists():
+            return False
+        return super().has_add_permission(request)
+
+    def has_delete_permission(self, request, obj=None):
         return False
 
 
